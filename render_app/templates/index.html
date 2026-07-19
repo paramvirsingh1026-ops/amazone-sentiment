@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Review Sentiment</title>
+<style>
+  :root {
+    --ink: #15171C;
+    --paper: #EDEAE2;
+    --line: #3A3D46;
+    --positive: #6FA97C;
+    --neutral: #C9A24B;
+    --negative: #C15C4E;
+    --mono: 'Courier New', Courier, monospace;
+    --serif: Georgia, 'Times New Roman', serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--mono);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #8A8D96;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 34px;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    color: #9C9FA8;
+    font-size: 13px;
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 110px;
+    resize: vertical;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 14px;
+    line-height: 1.5;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--paper);
+  }
+
+  button {
+    align-self: flex-start;
+    background: var(--paper);
+    color: var(--ink);
+    border: none;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    cursor: pointer;
+  }
+
+  button:hover { background: #ffffff; }
+  button:focus-visible { outline: 2px solid var(--positive); outline-offset: 2px; }
+
+  .error {
+    color: var(--negative);
+    font-size: 13px;
+    margin-top: -4px;
+  }
+
+  /* --- the tag: signature element --- */
+  .tag {
+    margin-top: 40px;
+    position: relative;
+    border: 1px solid var(--line);
+    padding: 26px 24px 22px 24px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  }
+
+  .tag::before {
+    content: "";
+    position: absolute;
+    top: 18px;
+    left: -1px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 1px solid var(--line);
+  }
+
+  .tag-label {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #8A8D96;
+    margin-bottom: 10px;
+  }
+
+  .review-text {
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--paper);
+    margin-bottom: 20px;
+    font-style: italic;
+  }
+
+  .verdict {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .verdict-word {
+    font-family: var(--serif);
+    font-size: 26px;
+  }
+
+  .verdict-word.Positive { color: var(--positive); }
+  .verdict-word.Neutral  { color: var(--neutral); }
+  .verdict-word.Negative { color: var(--negative); }
+
+  .bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 44px;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #B7BAC2;
+  }
+
+  .bar-track {
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    position: relative;
+  }
+
+  .bar-fill { height: 100%; }
+  .bar-fill.Positive { background: var(--positive); }
+  .bar-fill.Neutral  { background: var(--neutral); }
+  .bar-fill.Negative { background: var(--negative); }
+
+  footer {
+    margin-top: 36px;
+    font-size: 11px;
+    color: #5C5F68;
+  }
+
+  footer code {
+    color: #8A8D96;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">Amazon Review Sentiment — Live</div>
+    <h1>Read the review.<br>Get the verdict.</h1>
+    <div class="sub">Paste any product review below. The model scores it Positive, Neutral, or Negative, live.</div>
+
+    <form method="POST" action="/predict">
+      <textarea name="review" placeholder="e.g. Broke within a week, total waste of money.">{{ review or '' }}</textarea>
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+      <button type="submit">Analyze review</button>
+    </form>
+
+    {% if prediction %}
+    <div class="tag">
+      <div class="tag-label">Result</div>
+      <div class="review-text">&ldquo;{{ review }}&rdquo;</div>
+      <div class="verdict">
+        <span class="verdict-word {{ prediction }}">{{ prediction }}</span>
+      </div>
+      <div class="bars">
+        {% for label, score in proba.items() %}
+        <div class="bar-row">
+          <span>{{ label }}</span>
+          <div class="bar-track">
+            <div class="bar-fill {{ label }}" style="width: {{ (score * 100) | round(1) }}%"></div>
+          </div>
+          <span>{{ (score * 100) | round(1) }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <footer>API: <code>POST /api/predict</code> with JSON <code>{"review": "..."}</code></footer>
+  </div>
+</body>
+</html>
