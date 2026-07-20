@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Review Sentiment</title>
+<title>Should I Buy This? — Live Review Analyzer</title>
 <style>
   :root {
     --ink: #15171C;
+    --panel: #1B1E26;
     --paper: #EDEAE2;
     --line: #3A3D46;
     --positive: #6FA97C;
@@ -25,15 +26,11 @@
     color: var(--paper);
     font-family: var(--mono);
     display: flex;
-    align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    padding: 40px 20px 80px 20px;
   }
 
-  .wrap {
-    width: 100%;
-    max-width: 520px;
-  }
+  .wrap { width: 100%; max-width: 640px; }
 
   .eyebrow {
     font-size: 11px;
@@ -46,41 +43,43 @@
   h1 {
     font-family: var(--serif);
     font-weight: 400;
-    font-size: 34px;
-    margin: 0 0 6px 0;
+    font-size: 32px;
+    margin: 0 0 10px 0;
     letter-spacing: -0.01em;
   }
 
   .sub {
     color: #9C9FA8;
     font-size: 13px;
-    margin-bottom: 32px;
-    line-height: 1.5;
+    margin-bottom: 14px;
+    line-height: 1.6;
   }
 
-  form {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+  .howto {
+    border: 1px dashed var(--line);
+    padding: 14px 16px;
+    font-size: 12.5px;
+    color: #ABAEB6;
+    line-height: 1.6;
+    margin-bottom: 28px;
   }
+  .howto b { color: var(--paper); }
+
+  form { display: flex; flex-direction: column; gap: 14px; }
 
   textarea {
     width: 100%;
-    min-height: 110px;
+    min-height: 220px;
     resize: vertical;
-    background: transparent;
+    background: var(--panel);
     border: 1px solid var(--line);
     color: var(--paper);
     font-family: var(--mono);
-    font-size: 14px;
+    font-size: 13.5px;
     padding: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
   }
-
-  textarea:focus {
-    outline: none;
-    border-color: var(--paper);
-  }
+  textarea:focus { outline: none; border-color: var(--paper); }
 
   button {
     align-self: flex-start;
@@ -94,141 +93,164 @@
     padding: 12px 22px;
     cursor: pointer;
   }
-
   button:hover { background: #ffffff; }
-  button:focus-visible { outline: 2px solid var(--positive); outline-offset: 2px; }
 
-  .error {
-    color: var(--negative);
-    font-size: 13px;
-    margin-top: -4px;
-  }
+  .error { color: var(--negative); font-size: 13px; margin-top: -4px; }
 
-  /* --- the tag: signature element --- */
-  .tag {
-    margin-top: 40px;
-    position: relative;
+  /* --- verdict panel --- */
+  .verdict-panel {
+    margin-top: 44px;
     border: 1px solid var(--line);
-    padding: 26px 24px 22px 24px;
+    padding: 28px 26px;
     background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
   }
 
-  .tag::before {
-    content: "";
-    position: absolute;
-    top: 18px;
-    left: -1px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--ink);
-    border: 1px solid var(--line);
-  }
-
-  .tag-label {
+  .verdict-label {
     font-size: 11px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: #8A8D96;
-    margin-bottom: 10px;
-  }
-
-  .review-text {
-    font-family: var(--serif);
-    font-size: 17px;
-    line-height: 1.5;
-    color: var(--paper);
-    margin-bottom: 20px;
-    font-style: italic;
-  }
-
-  .verdict {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
   }
 
   .verdict-word {
     font-family: var(--serif);
-    font-size: 26px;
+    font-size: 30px;
+    margin-bottom: 4px;
+  }
+  .verdict-word.buy { color: var(--positive); }
+  .verdict-word.avoid { color: var(--negative); }
+  .verdict-word.mixed { color: var(--neutral); }
+
+  .verdict-meta {
+    color: #9C9FA8;
+    font-size: 12.5px;
+    margin-bottom: 24px;
   }
 
-  .verdict-word.Positive { color: var(--positive); }
-  .verdict-word.Neutral  { color: var(--neutral); }
-  .verdict-word.Negative { color: var(--negative); }
-
-  .bars {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+  .bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
 
   .bar-row {
     display: grid;
-    grid-template-columns: 70px 1fr 44px;
+    grid-template-columns: 70px 1fr 80px;
     align-items: center;
     gap: 10px;
     font-size: 12px;
     color: #B7BAC2;
   }
 
-  .bar-track {
-    height: 6px;
-    background: rgba(255,255,255,0.08);
-    position: relative;
-  }
-
+  .bar-track { height: 8px; background: rgba(255,255,255,0.08); position: relative; }
   .bar-fill { height: 100%; }
   .bar-fill.Positive { background: var(--positive); }
   .bar-fill.Neutral  { background: var(--neutral); }
   .bar-fill.Negative { background: var(--negative); }
 
-  footer {
-    margin-top: 36px;
+  /* --- individual reviews list --- */
+  .reviews-list { margin-top: 32px; }
+  .reviews-list-label {
     font-size: 11px;
-    color: #5C5F68;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #8A8D96;
+    margin-bottom: 14px;
   }
 
-  footer code {
-    color: #8A8D96;
+  .review-item {
+    border-top: 1px solid var(--line);
+    padding: 14px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: baseline;
   }
+  .review-item:last-child { border-bottom: 1px solid var(--line); }
+
+  .review-item .txt {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 14.5px;
+    color: #D6D3CB;
+    line-height: 1.5;
+  }
+
+  .tag {
+    flex-shrink: 0;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid var(--line);
+  }
+  .tag.Positive { color: var(--positive); border-color: var(--positive); }
+  .tag.Neutral  { color: var(--neutral); border-color: var(--neutral); }
+  .tag.Negative { color: var(--negative); border-color: var(--negative); }
+
+  footer { margin-top: 40px; font-size: 11px; color: #5C5F68; }
+  footer code { color: #8A8D96; }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="eyebrow">Amazon Review Sentiment — Live</div>
-    <h1>Read the review.<br>Get the verdict.</h1>
-    <div class="sub">Paste any product review below. The model scores it Positive, Neutral, or Negative, live.</div>
+    <div class="eyebrow">Amazon Review Analyzer — Live</div>
+    <h1>Should I buy this?<br>Let the reviews decide.</h1>
+    <div class="sub">Paste several reviews from a product's Amazon page and get one clear verdict, backed by a sentiment breakdown.</div>
 
-    <form method="POST" action="/predict">
-      <textarea name="review" placeholder="e.g. Broke within a week, total waste of money.">{{ review or '' }}</textarea>
+    <div class="howto">
+      <b>How to get the reviews:</b> open the product on Amazon → scroll to the review section →
+      highlight and copy several reviews (one per paragraph) → paste them all below, separated by
+      a blank line between each review.
+    </div>
+
+    <form method="POST" action="/analyze">
+      <textarea name="reviews" placeholder="Paste multiple reviews here, separated by a blank line between each one.
+
+Example:
+Great product, works exactly as described. Fast shipping too.
+
+Broke after a week. Very disappointed with the build quality.
+
+It's okay, does the job but nothing special.">{{ raw_text or '' }}</textarea>
       {% if error %}<div class="error">{{ error }}</div>{% endif %}
-      <button type="submit">Analyze review</button>
+      <button type="submit">Analyze reviews</button>
     </form>
 
-    {% if prediction %}
-    <div class="tag">
-      <div class="tag-label">Result</div>
-      <div class="review-text">&ldquo;{{ review }}&rdquo;</div>
-      <div class="verdict">
-        <span class="verdict-word {{ prediction }}">{{ prediction }}</span>
-      </div>
+    {% if summary %}
+    <div class="verdict-panel">
+      <div class="verdict-label">Verdict ({{ summary.total }} review{{ 's' if summary.total != 1 else '' }} analyzed)</div>
+      {% if summary.verdict == "Worth Buying" %}
+        <div class="verdict-word buy">Worth Buying</div>
+      {% elif summary.verdict == "Avoid" %}
+        <div class="verdict-word avoid">Avoid</div>
+      {% else %}
+        <div class="verdict-word mixed">Mixed — Proceed with Caution</div>
+      {% endif %}
+      <div class="verdict-meta">Based on the sentiment of the reviews you pasted in.</div>
+
       <div class="bars">
-        {% for label, score in proba.items() %}
+        {% for label in ["Positive", "Neutral", "Negative"] %}
         <div class="bar-row">
           <span>{{ label }}</span>
           <div class="bar-track">
-            <div class="bar-fill {{ label }}" style="width: {{ (score * 100) | round(1) }}%"></div>
+            <div class="bar-fill {{ label }}" style="width: {{ summary.percentages[label] }}%"></div>
           </div>
-          <span>{{ (score * 100) | round(1) }}%</span>
+          <span>{{ summary.percentages[label] }}% ({{ summary.counts[label] }})</span>
         </div>
         {% endfor %}
       </div>
     </div>
+
+    <div class="reviews-list">
+      <div class="reviews-list-label">Review by review</div>
+      {% for r in summary.results %}
+      <div class="review-item">
+        <div class="txt">&ldquo;{{ r.text }}&rdquo;</div>
+        <div class="tag {{ r.sentiment }}">{{ r.sentiment }}</div>
+      </div>
+      {% endfor %}
+    </div>
     {% endif %}
 
-    <footer>API: <code>POST /api/predict</code> with JSON <code>{"review": "..."}</code></footer>
+    <footer>API: <code>POST /api/analyze</code> with JSON <code>{"reviews": "review one\n\nreview two"}</code></footer>
   </div>
 </body>
 </html>

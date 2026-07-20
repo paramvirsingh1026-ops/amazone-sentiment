@@ -121,30 +121,69 @@ def predict_sentiment(text):
 
 # ---------- Routes ----------
 
+def split_reviews(raw_text):
+    """Splits a pasted block of reviews into individual reviews.
+    Supports reviews separated by blank lines, or one review per line."""
+    blocks = [b.strip() for b in re.split(r"\n\s*\n", raw_text) if b.strip()]
+    if len(blocks) <= 1:
+        blocks = [line.strip() for line in raw_text.split("\n") if line.strip()]
+    return blocks
+
+
+def analyze_reviews(raw_text):
+    reviews = split_reviews(raw_text)
+    results = []
+    counts = {"Positive": 0, "Neutral": 0, "Negative": 0}
+
+    for r in reviews:
+        pred, proba = predict_sentiment(r)
+        counts[pred] += 1
+        results.append({"text": r, "sentiment": pred, "proba": proba})
+
+    total = len(reviews)
+    percentages = {k: round((v / total) * 100, 1) if total else 0 for k, v in counts.items()}
+
+    if total == 0:
+        verdict = None
+    elif percentages["Positive"] >= 60:
+        verdict = "Worth Buying"
+    elif percentages["Negative"] >= 40:
+        verdict = "Avoid"
+    else:
+        verdict = "Mixed — Proceed with Caution"
+
+    return {
+        "total": total,
+        "counts": counts,
+        "percentages": percentages,
+        "verdict": verdict,
+        "results": results,
+    }
+
+
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
 
 
-@app.route("/predict", methods=["POST"])
-def predict():
-    text = request.form.get("review", "").strip()
-    if not text:
-        return render_template("index.html", error="Please enter a review.")
-    prediction, proba = predict_sentiment(text)
-    return render_template(
-        "index.html", review=text, prediction=prediction, proba=proba
-    )
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    raw_text = request.form.get("reviews", "").strip()
+    if not raw_text:
+        return render_template("index.html", error="Please paste at least one review.")
+    summary = analyze_reviews(raw_text)
+    return render_template("index.html", raw_text=raw_text, summary=summary)
 
 
-@app.route("/api/predict", methods=["POST"])
-def api_predict():
+@app.route("/api/analyze", methods=["POST"])
+def api_analyze()
     data = request.get_json(silent=True) or {}
-    text = data.get("review", "").strip()
-    if not text:
-        return jsonify({"error": "Missing 'review' field"}), 400
-    prediction, proba = predict_sentiment(text)
-    return jsonify({"review": text, "sentiment": prediction, "probabilities": proba})
+    raw_text = data.get("reviews", "").strip()
+    if not raw_text:
+        return jsonify({"error": "Missing 'reviews' field"}), 400
+    summary = analyze_reviews(raw_text)
+    return jsonify(summary)
+
 
 
 if __name__ == "__main__":
