@@ -176,7 +176,7 @@ def analyze():
 
 
 @app.route("/api/analyze", methods=["POST"])
-def api_analyze()
+def api_analyze():
     data = request.get_json(silent=True) or {}
     raw_text = data.get("reviews", "").strip()
     if not raw_text:
